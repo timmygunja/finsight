@@ -1,0 +1,159 @@
+.message-content {
+  line-height: 1.4;
+  margin-bottom: 0.5em;
+}
+
+.message-content strong {
+  color: #222;
+  font-weight: 600;
+}
+
+/* стили для визуализаций */
+.message-content-with-viz {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+/* Add styles for visualization placeholders */
+.visualization-placeholder {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.visualization-jsx {
+  width: 100%;
+  height: 300px;
+  margin: 15px 0;
+}
+
+.visualization-error {
+  padding: 15px;
+  border: 1px solid #f8d7da;
+  border-radius: 8px;
+  background-color: #fff5f5;
+  color: #721c24;
+  margin: 10px 0;
+}
+
+.recharts-wrapper {
+  width: 100%;
+  height: 300px;
+}
+
+/* стили для форматированного текста */
+.message-title {
+  font-size: 1.1em;
+  margin: 0.7em 0 0.3em 0;
+  color: #222;
+}
+
+.message-divider {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 0.7em 0;
+}
+
+.message-content strong {
+  color: #222;
+  font-weight: 600;
+}
+
+/* стили для визуализаций */
+.visualizations {
+  margin-top: 1em;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 0.7em;
+}
+
+.visualizations h4 {
+  margin-bottom: 0.7em;
+  font-weight: 600;
+}
+
+.visualizations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.visualization-wrapper {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.visualization-item {
+  padding: 0.7em;
+}
+
+.visualization-title {
+  font-weight: 600;
+  margin-bottom: 0.5em;
+}
+
+.visualization-description {
+  margin-top: 0.7em;
+  color: #444;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.visualization-chart {
+  height: 300px;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 0.7em;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.visualization-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.visualization-data {
+  background-color: #f0f0f0;
+  padding: 0.7em;
+  border-radius: 4px;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.visualization-error {
+  padding: 0.7em;
+  background-color: #fff0f0;
+  color: #d32f2f;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Стили для загрузки */
+.message-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

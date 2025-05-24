@@ -1,0 +1,151 @@
+.history-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-top: 80px; /* Добавляем отступ сверху */
+}
+
+.history-page h1 {
+  margin-bottom: 2rem;
+  color: white;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000,
+    -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.history-loading,
+.history-error,
+.history-empty {
+  text-align: center;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.history-error {
+  color: #e53e3e;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.history-item {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1.5rem;
+  color: white;
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.history-item-header h3 {
+  margin: 0;
+  color: white;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000,
+    -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.history-date {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.history-preview {
+  margin-bottom: 1.5rem;
+}
+
+.history-message {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.history-message.user {
+  background-color: rgba(66, 153, 225, 0.3);
+}
+
+.history-message.system {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.history-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.history-view-btn,
+.history-export-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+}
+
+.history-view-btn {
+  background-color: rgba(66, 153, 225, 0.6);
+  color: white;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.history-export-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.history-view-btn:hover {
+  background-color: rgba(66, 153, 225, 0.8);
+}
+
+.history-export-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .history-page {
+    padding: 1rem;
+    padding-top: 80px;
+  }
+
+  .history-item {
+    padding: 1rem;
+  }
+
+  .history-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-date {
+    margin-top: 0.5rem;
+  }
+
+  .history-actions {
+    flex-direction: column;
+  }
+
+  .history-view-btn,
+  .history-export-btn {
+    width: 100%;
+  }
+}

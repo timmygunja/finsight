@@ -1,0 +1,13 @@
+# ===== GRAFANA DASHBOARD PROVISIONING - NEW =====
+apiVersion: 1
+
+providers:
+  - name: 'finsight-dashboards'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

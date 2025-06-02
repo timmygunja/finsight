@@ -24,9 +24,9 @@ async function processWithAI(requestData) {
   const aiServices = [
     { name: "qwen", fn: qwenService },
     { name: "deepseek", fn: deepseekService },
-    { name: "openai", fn: openaiService },
-    { name: "claude", fn: claudeService },
-    { name: "gemini", fn: geminiService },
+    { name: "gemma", fn: gemmaService },
+    { name: "mistral", fn: mistralService },
+    { name: "llama", fn: llamaService },
   ];
 
   let lastError = null;
@@ -74,7 +74,8 @@ async function processWithAI(requestData) {
 
       return enhancedResponse;
     } catch (error) {
-      console.error(`Error with ${service.name} service:`, error);
+      console.error("❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌");
+      console.error(`Error with ${service.name} service:`, error.response);
       lastError = error;
       // Continue to the next service
     }
@@ -83,7 +84,7 @@ async function processWithAI(requestData) {
   // If we get here, all services failed
   console.error("All AI services failed");
   return {
-    text: "Я проанализировал ваши данные, но в процессе обработки на сервере возникла ошибка. Пожалуйста, попробуйте еще раз или обратитесь в техническую поддержку.",
+    text: "Я проанализировал ваши данные, но в процессе обработки на сервере возникла ошибка. Пожалуйста, попробуйте еще раз позже.",
     source: "fallback",
     visualizationData: [],
     context: { topic: "Error", intent: "Error Recovery" },
@@ -195,7 +196,7 @@ async function enhanceResponse(response, requestData) {
     `;
 
     // Use the same AI service to structure the data
-    const structuredResponse = await openaiService({
+    const structuredResponse = await mistralService({
       ...requestData,
       text: structuringPrompt,
     });
@@ -291,7 +292,7 @@ async function deepseekService(requestData) {
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "deepseek/deepseek-coder:33b",
+        model: "deepseek/deepseek-prover-v2:free",
         messages: [
           SYSTEM_MESSAGE,
           {
@@ -322,18 +323,18 @@ async function deepseekService(requestData) {
 }
 
 /**
- * Process request with OpenAI
+ * Process request with mistral
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} OpenAI response
+ * @returns {Promise<Object>} mistral response
  */
-async function openaiService(requestData) {
+async function mistralService(requestData) {
   try {
     const prompt = buildPrompt(requestData);
 
     const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "gpt-4o",
+        model: "mistralai/mistral-7b-instruct:free",
         messages: [
           SYSTEM_MESSAGE,
           {
@@ -345,7 +346,9 @@ async function openaiService(requestData) {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": process.env.BASE_URL || "http://localhost:3000",
+          "X-Title": "Finsight Analytics",
           "Content-Type": "application/json",
         },
       }
@@ -353,27 +356,27 @@ async function openaiService(requestData) {
 
     return {
       text: response.data.choices[0].message.content,
-      source: "openai",
+      source: "mistral",
     };
   } catch (error) {
-    console.error("Error calling OpenAI service:", error);
+    console.error("Error calling mistral service:", error);
     throw error;
   }
 }
 
 /**
- * Process request with Claude
+ * Process request with gemma
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} Claude response
+ * @returns {Promise<Object>} gemma response
  */
-async function claudeService(requestData) {
+async function gemmaService(requestData) {
   try {
     const prompt = buildPrompt(requestData);
 
     const response = await axios.post(
-      "https://api.anthropic.com/v1/messages",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: "claude-3-opus-20240229",
+        model: "google/gemma-3-27b-it:free",
         messages: [
           SYSTEM_MESSAGE,
           {
@@ -381,72 +384,66 @@ async function claudeService(requestData) {
             content: prompt,
           },
         ],
-        max_tokens: 4000,
+        temperature: 0.7,
       },
       {
         headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": process.env.BASE_URL || "http://localhost:3000",
+          "X-Title": "Finsight Analytics",
           "Content-Type": "application/json",
         },
       }
     );
 
     return {
-      text: response.data.content[0].text,
-      source: "claude",
+      text: response.data.choices[0].message.content,
+      source: "mistral",
     };
   } catch (error) {
-    console.error("Error calling Claude service:", error);
+    console.error("Error calling gemma service:", error);
     throw error;
   }
 }
 
 /**
- * Process request with Gemini
+ * Process request with llama
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} Gemini response
+ * @returns {Promise<Object>} llama response
  */
-async function geminiService(requestData) {
+async function llamaService(requestData) {
   try {
     const prompt = buildPrompt(requestData);
 
-    // Gemini has a different format for messages, so we combine system and user messages
-    const combinedPrompt = `${SYSTEM_MESSAGE.content}
-    
-    ${prompt}`;
-
     const response = await axios.post(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
-        contents: [
+        model: "meta-llama/llama-3.3-8b-instruct:free",
+        messages: [
+          SYSTEM_MESSAGE,
           {
             role: "user",
-            parts: [
-              {
-                text: combinedPrompt,
-              },
-            ],
+            content: prompt,
           },
         ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4000,
-        },
+        temperature: 0.7,
       },
       {
         headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": process.env.BASE_URL || "http://localhost:3000",
+          "X-Title": "Finsight Analytics",
           "Content-Type": "application/json",
-          "x-goog-api-key": process.env.GOOGLE_API_KEY,
         },
       }
     );
 
     return {
-      text: response.data.candidates[0].content.parts[0].text,
-      source: "gemini",
+      text: response.data.choices[0].message.content,
+      source: "llama",
     };
   } catch (error) {
-    console.error("Error calling Gemini service:", error);
+    console.error("Error calling llama service:", error);
     throw error;
   }
 }
@@ -543,9 +540,9 @@ async function routeToAIService(requestData, preferences = {}) {
     // Otherwise, try specific models based on preferences
     if (preferences.chatGPT4) {
       try {
-        return await openaiService(requestData);
+        return await mistralService(requestData);
       } catch (error) {
-        console.error("Error with OpenAI service:", error);
+        console.error("Error with mistral service:", error);
       }
     }
 
@@ -557,11 +554,11 @@ async function routeToAIService(requestData, preferences = {}) {
       }
     }
 
-    if (preferences.claude) {
+    if (preferences.gemma) {
       try {
-        return await claudeService(requestData);
+        return await gemmaService(requestData);
       } catch (error) {
-        console.error("Error with Claude service:", error);
+        console.error("Error with gemma service:", error);
       }
     }
 
@@ -590,7 +587,7 @@ module.exports = {
   routeToAIService,
   qwenService,
   deepseekService,
-  openaiService,
-  claudeService,
-  geminiService,
+  mistralService,
+  gemmaService,
+  llamaService,
 };

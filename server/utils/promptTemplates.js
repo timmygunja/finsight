@@ -85,7 +85,7 @@ Generate a valid, self-contained Recharts JSX component based on the following v
 {visualizationBlock}
 
 **CRITICAL REQUIREMENTS**:
-1. The JSX MUST be valid, standalone, and ready to render in a React component.
+1. The JSX MUST be valid, standalone, and ready to render in a React component. Avoid mismatching tags, write valid code.
 2. ALWAYS use the EXACT data values from the visualization block - DO NOT substitute with sample data.
 3. ALWAYS use ResponsiveContainer with width="100%" and height={300}.
 4. ONLY use components from the recharts library.
@@ -120,7 +120,7 @@ You are a data visualization expert specializing in financial data visualization
 {data}
 
 **CRITICAL REQUIREMENTS**:
-1. The JSX MUST be valid, standalone, and ready to render in a React component.
+1. The JSX MUST be valid, standalone, and ready to render in a React component. Avoid mismatching tags, write valid code.
 2. ALWAYS include a self-contained data array directly in the JSX code - do not reference external data.
 3. ALWAYS use ResponsiveContainer with width="100%" and height={300}.
 4. ONLY use components from the recharts library.

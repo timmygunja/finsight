@@ -1,8 +1,3 @@
-/**
- * AI Service
- * Handles interactions with various AI models
- */
-
 const axios = require("axios");
 const {
   SYSTEM_MESSAGE,
@@ -12,87 +7,149 @@ const visualizationService = require("../visualizationService");
 const {
   extractVisualizationDataFromText,
 } = require("../../utils/dataExtractors");
+// Monitoring and caching enhancements
+const cacheService = require("../../lib/cache-service");
+const { metrics } = require("../../lib/metrics");
 
 /**
- * Main AI service that handles all AI model interactions
- * This consolidates all AI calls and implements fallback mechanisms
+ * Main AI service that handles all AI model interactions with fallbacks
+ * Now includes caching and metrics tracking
  * @param {Object} requestData - Request data including text, files, history, conversationId, userId
  * @returns {Promise<Object>} AI response with text, source, visualizationData, and context
  */
 async function processWithAI(requestData) {
-  // List of AI services to try in order
-  const aiServices = [
-    { name: "qwen", fn: qwenService },
-    { name: "deepseek", fn: deepseekService },
-    { name: "gemma", fn: gemmaService },
-    { name: "mistral", fn: mistralService },
-    { name: "llama", fn: llamaService },
-  ];
+  const startTime = Date.now();
 
-  let lastError = null;
-
-  // Try each AI service in order until one succeeds
-  for (const service of aiServices) {
-    try {
-      console.log(`Attempting to process with ${service.name} service`);
-      const response = await service.fn(requestData);
-
-      // If we get here, the service succeeded
-      console.log(`Successfully processed with ${service.name} service`);
-
-      // Parse the response to extract visualization data
-      const enhancedResponse = await enhanceResponse(response, requestData);
-
-      // Save the conversation to the database if needed
-      if (requestData.conversationId && requestData.userId) {
-        try {
-          const Conversation = require("../../models/conversation");
-          await Conversation.saveConversation(
-            requestData.conversationId,
-            requestData.userId,
-            {
-              role: "user",
-              content: requestData.text,
-              files: requestData.files.map((f) => ({
-                name: f.name,
-                type: f.type,
-              })),
-              timestamp: new Date(),
-            },
-            {
-              role: "system",
-              content: enhancedResponse.text,
-              visualizations: enhancedResponse.visualizationData,
-              timestamp: new Date(),
-            }
-          );
-        } catch (dbError) {
-          console.error("Error saving conversation to database:", dbError);
-          // Continue even if database save fails
-        }
-      }
-
-      return enhancedResponse;
-    } catch (error) {
-      console.error("❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌");
-      console.error(`Error with ${service.name} service:`, error.response);
-      lastError = error;
-      // Continue to the next service
+  try {
+    // Check cache first
+    const cachedResponse = await cacheService.getCachedAIResponse(requestData);
+    if (cachedResponse) {
+      metrics.cacheHits.inc({ type: "ai_response" });
+      console.log("Cache hit for AI request");
+      return cachedResponse;
     }
-  }
+    metrics.cacheMisses.inc({ type: "ai_response" });
 
-  // If we get here, all services failed
-  console.error("All AI services failed");
-  return {
-    text: "Я проанализировал ваши данные, но в процессе обработки на сервере возникла ошибка. Пожалуйста, попробуйте еще раз позже.",
-    source: "fallback",
-    visualizationData: [],
-    context: { topic: "Error", intent: "Error Recovery" },
-  };
+    // List of AI services to try in order
+    const aiServices = [
+      { name: "qwen", fn: qwenService },
+      { name: "deepseek", fn: deepseekService },
+      { name: "gemma", fn: gemmaService },
+      { name: "mistral", fn: mistralService },
+      { name: "llama", fn: llamaService },
+    ];
+
+    let lastError = null;
+
+    // Try each AI service in order until one succeeds
+    for (const service of aiServices) {
+      const serviceStartTime = Date.now();
+
+      try {
+        console.log(`Attempting to process with ${service.name} service`);
+        metrics.aiServiceRequests.inc({
+          service: service.name,
+          status: "attempt",
+        });
+
+        const response = await service.fn(requestData);
+
+        // Track successful request
+        const serviceDuration = (Date.now() - serviceStartTime) / 1000;
+        metrics.aiServiceRequests.inc({
+          service: service.name,
+          status: "success",
+        });
+        metrics.aiServiceDuration.observe(
+          { service: service.name },
+          serviceDuration
+        );
+
+        console.log(`Successfully processed with ${service.name} service`);
+
+        // Parse the response to extract visualization data
+        const enhancedResponse = await enhanceResponse(response, requestData);
+
+        // Cache the successful response
+        await cacheService.cacheAIResponse(requestData, enhancedResponse);
+
+        // Save the conversation to the database if needed
+        if (requestData.conversationId && requestData.userId) {
+          try {
+            const Conversation = require("../../models/conversation");
+            await Conversation.saveConversation(
+              requestData.conversationId,
+              requestData.userId,
+              {
+                role: "user",
+                content: requestData.text,
+                files: requestData.files.map((f) => ({
+                  name: f.name,
+                  type: f.type,
+                })),
+                timestamp: new Date(),
+              },
+              {
+                role: "system",
+                content: enhancedResponse.text,
+                visualizations: enhancedResponse.visualizationData,
+                timestamp: new Date(),
+              }
+            );
+          } catch (dbError) {
+            console.error("Error saving conversation to database:", dbError);
+            metrics.errorsTotal.inc({
+              type: "database",
+              code: dbError.code || "unknown",
+            });
+          }
+        }
+
+        return enhancedResponse;
+      } catch (error) {
+        // Track failed request
+        const serviceDuration = (Date.now() - serviceStartTime) / 1000;
+        metrics.aiServiceRequests.inc({
+          service: service.name,
+          status: "error",
+        });
+        metrics.aiServiceDuration.observe(
+          { service: service.name },
+          serviceDuration
+        );
+        metrics.errorsTotal.inc({
+          type: "ai_service",
+          code: error.code || "unknown",
+        });
+
+        console.error(`Error with ${service.name} service:`, error);
+        lastError = error;
+      }
+    }
+
+    // If we get here, all services failed
+    console.error("All AI services failed");
+    metrics.errorsTotal.inc({
+      type: "ai_service",
+      code: "all_services_failed",
+    });
+
+    return {
+      text: "Я проанализировал ваши данные, но в процессе обработки на сервере возникла ошибка. Пожалуйста, попробуйте еще раз позже.",
+      source: "fallback",
+      visualizationData: [],
+      context: { topic: "Error", intent: "Error Recovery" },
+    };
+  } finally {
+    // Track total processing time
+    const totalDuration = (Date.now() - startTime) / 1000;
+    metrics.aiServiceDuration.observe({ service: "total" }, totalDuration);
+  }
 }
 
 /**
  * Parse the AI response to extract structured data for visualizations
+ * Now includes metrics tracking
  * @param {Object} response - AI response
  * @param {Object} requestData - Original request data
  * @returns {Promise<Object>} Enhanced response with visualization data
@@ -116,6 +173,14 @@ async function enhanceResponse(response, requestData) {
           extractedVisualizations,
           requestData.files
         );
+
+      // Track visualization metrics
+      extractedVisualizations.forEach((viz) => {
+        metrics.visualizationsGenerated.inc({
+          type: viz.type || "unknown",
+          status: "success",
+        });
+      });
 
       // Process the text to replace visualization blocks with placeholders
       let processedText = response.text;
@@ -234,6 +299,10 @@ async function enhanceResponse(response, requestData) {
     };
   } catch (error) {
     console.error("Error enhancing response:", error);
+    metrics.errorsTotal.inc({
+      type: "response_enhancement",
+      code: "enhancement_failed",
+    });
     return response;
   }
 }
@@ -323,9 +392,9 @@ async function deepseekService(requestData) {
 }
 
 /**
- * Process request with mistral
+ * Process request with Mistral via OpenRouter
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} mistral response
+ * @returns {Promise<Object>} Mistral response
  */
 async function mistralService(requestData) {
   try {
@@ -359,15 +428,15 @@ async function mistralService(requestData) {
       source: "mistral",
     };
   } catch (error) {
-    console.error("Error calling mistral service:", error);
+    console.error("Error calling Mistral service:", error);
     throw error;
   }
 }
 
 /**
- * Process request with gemma
+ * Process request with Gemma via OpenRouter
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} gemma response
+ * @returns {Promise<Object>} Gemma response
  */
 async function gemmaService(requestData) {
   try {
@@ -398,18 +467,18 @@ async function gemmaService(requestData) {
 
     return {
       text: response.data.choices[0].message.content,
-      source: "mistral",
+      source: "gemma",
     };
   } catch (error) {
-    console.error("Error calling gemma service:", error);
+    console.error("Error calling Gemma service:", error);
     throw error;
   }
 }
 
 /**
- * Process request with llama
+ * Process request with Llama via OpenRouter
  * @param {Object} requestData - Request data
- * @returns {Promise<Object>} llama response
+ * @returns {Promise<Object>} Llama response
  */
 async function llamaService(requestData) {
   try {
@@ -443,7 +512,7 @@ async function llamaService(requestData) {
       source: "llama",
     };
   } catch (error) {
-    console.error("Error calling llama service:", error);
+    console.error("Error calling Llama service:", error);
     throw error;
   }
 }
@@ -564,8 +633,7 @@ async function routeToAIService(requestData, preferences = {}) {
 
     if (preferences.llama) {
       try {
-        // Placeholder for Llama service
-        throw new Error("Llama service not implemented");
+        return await llamaService(requestData);
       } catch (error) {
         console.error("Error with Llama service:", error);
       }

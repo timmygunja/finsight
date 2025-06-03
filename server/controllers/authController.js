@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
@@ -18,7 +18,7 @@ exports.register = async (req, res) => {
     }
 
     // Хеширование пароля
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(password, 10);
 
     // Создание нового пользователя
     const user = new User({
@@ -50,7 +50,7 @@ exports.login = async (req, res) => {
     }
 
     // Проверка пароля
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcryptjs.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: "Неверный email или пароль" });
     }
